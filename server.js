@@ -1,12 +1,25 @@
-import express from "express";
-import colors from "colors";
-import dotenv from "dotenv";
-import morgan from "morgan";
-import connectDB from "./config/db.js";
-import authRoutes from './routes/authRoute.js'
-import categoryRoutes from './routes/categoryRoutes.js'
-import productRoutes from './routes/productRoutes.js'
 import cors from "cors";
+import dotenv from "dotenv";
+import express from "express";
+import morgan from "morgan";
+import client, { register } from "prom-client";
+import connectDB from "./config/db.js";
+import authRoutes from './routes/authRoute.js';
+import categoryRoutes from './routes/categoryRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+
+// configure monitoring
+register.setDefaultLabels({
+    app: "E-commerce backend"
+});
+
+client.collectDefaultMetrics({ register });
+
+const metricsHandler = async (req, res) => {
+    res.writeHead(200, { "Content-Type": register.contentType });
+    register.metrics().then((data) => res.end(data));
+    return;
+}
 
 // configure env
 dotenv.config();
@@ -20,6 +33,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
+
+// register metric collection
+app.get("/metrics", metricsHandler);        // monitoring
 
 //routes
 app.use("/api/v1/auth", authRoutes);
